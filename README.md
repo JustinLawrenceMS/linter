@@ -12,6 +12,33 @@ A simple yet powerful PHP script that recursively checks PHP files for syntax er
 - Lists all vendor directories that were skipped
 - Provides relative file paths for better readability
 
+## Installation
+
+### Recommended Setup
+
+For best usage, install this script in the parent directory of your PHP projects. This allows you to easily scan multiple project directories:
+
+```bash
+# Clone or copy to parent directory
+cd /path/to/parent/directory
+git clone [repository-url] php-linter
+
+# Make the script executable (optional)
+chmod +x php-linter/linter.php
+
+# Optional: Create a symbolic link
+ln -s php-linter/linter.php lint-php
+```
+
+This setup enables you to scan any project directory like this:
+```bash
+# From parent directory
+./lint-php project-name
+
+# From within a project
+../lint-php .
+```
+
 ## Usage
 
 ### Basic Usage
