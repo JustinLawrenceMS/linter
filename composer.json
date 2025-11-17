@@ -1,0 +1,23 @@
+{
+  "name": "justinlawrencems/plinter",
+  "description": "Recursive PHP linter wrapper",
+  "type": "project",
+  "require": {
+  },
+  "require-dev": {
+    "pestphp/pest": "4.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Plinter\\": "src/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/pest"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
+}
