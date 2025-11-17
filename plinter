@@ -1,0 +1,144 @@
+#!/usr/bin/env php
+<?php
+// Executable CLI entrypoint for plinter. Delegates to Plinter\Runner.
+if (php_sapi_name() !== 'cli') {
+    return;
+}
+
+// Prefer Composer autoload when available
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+} else {
+    require_once __DIR__ . '/src/Runner.php';
+}
+
+use Plinter\Runner;
+
+$runner = new Runner();
+
+// Parse CLI args
+$args = $argv;
+array_shift($args); // drop script name
+
+$skipVendor = false;
+$verbose = false;
+$explicitArgs = [];
+
+foreach ($args as $arg) {
+    if ($arg === '--skip-vendor') {
+        $skipVendor = true;
+        continue;
+    }
+    if ($arg === '--verbose' || $arg === '-v') {
+        $verbose = true;
+        continue;
+    }
+    $explicitArgs[] = $arg;
+}
+
+$directoriesToScan = null;
+
+if (!empty($explicitArgs)) {
+    $dirs = [];
+    foreach ($explicitArgs as $a) {
+        foreach (array_map('trim', explode(',', $a)) as $part) {
+            if ($part === '') continue;
+            if (strpos($part, DIRECTORY_SEPARATOR) === 0) {
+                $full = $part;
+            } else {
+                $full = realpath(getcwd() . DIRECTORY_SEPARATOR . $part) ?: realpath($part);
+            }
+            if ($full && is_dir($full)) {
+                $dirs[] = $full;
+            } else {
+                // try as-is
+                if (is_dir($part)) {
+                    $dirs[] = realpath($part);
+                }
+            }
+        }
+    }
+    if (!empty($dirs)) {
+        $directoriesToScan = $dirs;
+    }
+}
+
+if ($directoriesToScan === null) {
+    $cwd = getcwd();
+    echo "No directory specified. Current directory is: {$cwd}\n";
+    if (!$skipVendor) {
+        echo "Skip vendor directories? (Y/n): ";
+        $r = trim(fgets(STDIN));
+        if ($r === '' || strtolower($r) !== 'n') {
+            $skipVendor = true;
+        }
+    }
+
+    echo "Scan all PHP files in this directory and subdirectories? (Y/n): ";
+    $r = trim(fgets(STDIN));
+    if (strtolower($r) === 'n') {
+        echo "\nEnter directories to scan (comma-separated paths, relative or absolute):\n";
+        echo "Example: src, ../other-project, /absolute/path/to/dir\n";
+        echo "Enter paths: ";
+        $input = trim(fgets(STDIN));
+        if ($input === '') {
+            echo "No directories selected. Scan cancelled.\n";
+            exit(0);
+        }
+        $parts = array_map('trim', explode(',', $input));
+        $dirs = [];
+        foreach ($parts as $part) {
+            if ($part === '') continue;
+            if (strpos($part, DIRECTORY_SEPARATOR) === 0) {
+                $full = $part;
+            } else {
+                $full = realpath($cwd . DIRECTORY_SEPARATOR . $part) ?: realpath($part);
+            }
+            if ($full && is_dir($full)) {
+                $dirs[] = $full;
+            } else {
+                echo "Warning: Directory not found or invalid: $part\n";
+            }
+        }
+        if (empty($dirs)) {
+            echo "No valid directories found. Scan cancelled.\n";
+            exit(0);
+        }
+        $directoriesToScan = $dirs;
+    }
+}
+
+echo "\nStarting PHP lint scan...\n";
+echo "------------------------\n\n";
+
+if (isset($directoriesToScan) && is_array($directoriesToScan)) {
+    $result = $runner->scanMultiple($directoriesToScan, $skipVendor, $verbose);
+} else {
+    $result = $runner->scanDirectory(getcwd(), $skipVendor, $verbose);
+}
+
+echo "\n------------------------\n";
+echo "Files checked: " . ($result['filesChecked'] ?? 0) . "\n";
+if (!empty($result['filesSkipped'])) {
+    echo "Files skipped (in vendor directories): " . $result['filesSkipped'] . "\n";
+}
+
+if ($result['success']) {
+    echo "All files passed!\n";
+} else {
+    echo "Errors were found:\n\n";
+    foreach ($result['errors'] as $error) {
+        echo "File: {$error['file']}\n";
+        echo "Error: {$error['message']}\n";
+        echo "------------------------\n";
+    }
+}
+
+if (!empty($result['permissionDenied'])) {
+    echo "\nPermission Denied (skipped):\n";
+    foreach ($result['permissionDenied'] as $deniedPath) {
+        echo "- $deniedPath\n";
+    }
+}
+
+exit($result['success'] ? 0 : 1);

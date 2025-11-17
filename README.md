@@ -1,71 +1,95 @@
-# PHP Recursive Linter
+git clone https://github.com/JustinLawrenceMS/linter.git ~/php-linter
+alias php-lint='php ~/php-linter/linter.php'
+# plinter
 
-A simple yet powerful PHP script that recursively checks PHP files for syntax errors using `php -l`. It can scan entire project directories while providing detailed feedback and supporting vendor directory exclusions.
+plinter is a small CLI wrapper around `php -l` that recursively scans PHP files in one or more directories and reports syntax errors. The scanning logic is implemented in a callable `Plinter\\Runner` class so you can use the scanner programmatically in tests or other PHP code.
+
+**Highlights**
+- Recursive scanning with correct vendor exclusions
+- Programmatic API via `Plinter\\Runner` (see `src/Runner.php`)
+- CLI wrapper `linter.php` for interactive and simple use
+- Pest test suite included for reliable, isolated tests
 
 ## Installation
 
-### Quick Setup
-
-Clone the repository and set up a bash alias for easy access:
+Clone the repository and set up an alias for convenient CLI usage:
 
 ```bash
 # Clone the repository
 git clone https://github.com/JustinLawrenceMS/linter.git ~/php-linter
 
 # Add this alias to your ~/.bashrc, ~/.zshrc, or shell config:
-alias php-lint='php ~/php-linter/linter.php'
+alias plinter='php ~/php-linter/linter.php'
 
 # Reload your shell
 source ~/.zshrc  # or source ~/.bashrc for bash
 ```
 
-Now you can use `php-lint` from anywhere:
+Now you can run `plinter` from any directory:
 
 ```bash
 # Scan current directory
-php-lint
+plinter
 
-# Scan specific directory
-php-lint /path/to/directory
+# Scan a specific directory
+plinter /path/to/project
 
-# Scan with vendor directories skipped
-php-lint --skip-vendor /path/to/directory
+# Scan multiple explicit paths
+plinter /path/a /path/b
+
+# Skip vendor directories
+plinter --skip-vendor /path/to/project
 ```
 
-## Features
+Note: `linter.php` is a small CLI wrapper. The core scanning code lives in `src/Runner.php` and is PSR-4 autoloadable under the `Plinter\\` namespace.
 
-- Recursively scans directories for PHP files
-- Skip vendor directories (optional)
-- Interactive mode for directory selection
-- Detailed error reporting
-- Shows summary of scanned and skipped files
-- Lists all vendor directories that were skipped
-- Provides relative file paths for better readability
+## Programmatic usage
 
-## Usage
+If you prefer to integrate plinter into PHP code or run it from tests, use the `Plinter\\Runner` class directly (no subprocess required):
 
-### Basic Usage
+```php
+require 'vendor/autoload.php';
+
+$runner = new Plinter\\Runner();
+$result = $runner->scanDirectory('/path/to/project', /* $skipVendor = */ true);
+
+if (!$result['success']) {
+	foreach ($result['errors'] as $err) {
+		echo $err['file'] . ": " . $err['message'] . "\\n";
+	}
+}
+```
+
+The `scanDirectory` and `scanMultiple` methods return an array with these keys:
+
+- `success` (bool) — whether all scanned files passed
+- `errors` (array) — list of [ 'file' => relative-path, 'message' => text ]
+- `permissionDenied` (array) — paths that could not be read (with exception messages)
+- `filesChecked` (int) — number of PHP files checked
+- `filesSkipped` (int) — number of files skipped (e.g. in vendor)
+- `vendorDirsSkipped` (array) — list of unique vendor dirs that were skipped
+
+## Tests
+
+This repo includes a Pest test suite that exercises the scanner using isolated temporary directories (no live repo scanning). To run the tests:
+
+1. Install dev dependencies:
 
 ```bash
-# Scan current directory
-php linter.php
-
-# Scan specific directory
-php linter.php /path/to/directory
-
-# Scan with vendor directories skipped
-php linter.php --skip-vendor /path/to/directory
+composer install
 ```
 
-### Interactive Mode
+2. Run the test suite:
 
-When run without arguments, the script enters interactive mode:
+```bash
+composer test
+# or
+vendor/bin/pest
+```
 
-1. Shows current directory
-2. Asks if you want to skip vendor directories
-3. Asks for confirmation before scanning
+## Output example
 
-### Output Example
+The CLI prints progress per-file and a summary. Example:
 
 ```
 Starting PHP lint scan...
@@ -77,34 +101,22 @@ Checking tests/UserTest.php... ERROR
 Files checked: 3
 Files skipped (in vendor directories): 42
 
-Skipped vendor directories:
-- vendor
-- modules/custom/vendor
-
 ------------------------
 Errors were found:
 
 File: tests/UserTest.php
 Error: syntax error, unexpected ';', expecting '{'
 ------------------------
+
+Permission Denied (skipped):
+- /path/to/protected/folder (failed to open dir: Permission denied)
 ```
-
-## Error Handling
-
-- Shows syntax errors with file paths and specific error messages
-- Uses relative paths for better readability
-- Clearly separates each error with dividers
-- Returns exit code 0 for success, 1 for errors
 
 ## Requirements
 
-- PHP 5.4 or higher
-- Read permissions for directories to be scanned
+- PHP 7.4+ recommended (uses SPL iterators and namespaces)
 
 ## Credits
 
-This project was developed with the assistance of:
-- GitHub Copilot in Visual Studio Code
-- Visual Studio Code's PHP development tools
+Developed with assistance from AI pair-programming tools and authored in Visual Studio Code.
 
-Created in VS Code with AI pair programming.

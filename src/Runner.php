@@ -13,7 +13,7 @@ class Runner
         return in_array('vendor', $pathParts, true);
     }
 
-    public function scanDirectory(string $directory, bool $skipVendor = false): array
+    public function scanDirectory(string $directory, bool $skipVendor = false, bool $verbose = false): array
     {
         $errors = false;
         $filesChecked = 0;
@@ -29,9 +29,15 @@ class Runner
                 RecursiveIteratorIterator::CATCH_GET_CHILD
             );
 
+            $lastDir = null;
             foreach ($iterator as $file) {
                 try {
                     if ($file->isFile()) {
+                        $currentDir = dirname($file->getPathname());
+                        if ($verbose && $currentDir !== $lastDir) {
+                            echo "Entering directory: $currentDir\n";
+                            $lastDir = $currentDir;
+                        }
                         $filename = $file->getFilename();
                         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                         if ($extension !== 'php') {
@@ -50,12 +56,19 @@ class Runner
                             continue;
                         }
 
+                        if ($verbose) {
+                            echo "Checking {$file->getPathname()}... ";
+                        }
                         // Run php -l and capture output
                         $output = [];
                         $returnVar = 0;
                         exec("php -l " . escapeshellarg($file->getPathname()), $output, $returnVar);
 
                         if ($returnVar !== 0) {
+                            if ($verbose) {
+                                echo "ERROR\n";
+                                echo implode("\n", $output) . "\n";
+                            }
                             $errorList[] = [
                                 'file' => str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname()),
                                 'message' => implode("\n", array_filter($output, function ($line) {
@@ -63,6 +76,10 @@ class Runner
                                 }))
                             ];
                             $errors = true;
+                        } else {
+                            if ($verbose) {
+                                echo "OK\n";
+                            }
                         }
 
                         $filesChecked++;
@@ -96,11 +113,11 @@ class Runner
         ];
     }
 
-    public function scanMultiple(array $paths, bool $skipVendor = false): array
+    public function scanMultiple(array $paths, bool $skipVendor = false, bool $verbose = false): array
     {
         $all = ['success' => true, 'errors' => [], 'permissionDenied' => [], 'filesChecked' => 0, 'filesSkipped' => 0, 'vendorDirsSkipped' => []];
         foreach ($paths as $path) {
-            $res = $this->scanDirectory($path, $skipVendor);
+            $res = $this->scanDirectory($path, $skipVendor, $verbose);
             if (!$res['success']) {
                 $all['success'] = false;
             }
