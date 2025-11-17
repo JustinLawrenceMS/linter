@@ -2,6 +2,36 @@
 
 A simple yet powerful PHP script that recursively checks PHP files for syntax errors using `php -l`. It can scan entire project directories while providing detailed feedback and supporting vendor directory exclusions.
 
+## Installation
+
+### Quick Setup
+
+Clone the repository and set up a bash alias for easy access:
+
+```bash
+# Clone the repository
+git clone https://github.com/JustinLawrenceMS/linter.git ~/php-linter
+
+# Add this alias to your ~/.bashrc, ~/.zshrc, or shell config:
+alias php-lint='php ~/php-linter/linter.php'
+
+# Reload your shell
+source ~/.zshrc  # or source ~/.bashrc for bash
+```
+
+Now you can use `php-lint` from anywhere:
+
+```bash
+# Scan current directory
+php-lint
+
+# Scan specific directory
+php-lint /path/to/directory
+
+# Scan with vendor directories skipped
+php-lint --skip-vendor /path/to/directory
+```
+
 ## Features
 
 - Recursively scans directories for PHP files
