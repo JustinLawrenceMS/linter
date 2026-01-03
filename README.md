@@ -15,7 +15,7 @@ Clone the repository and make the bundled `plinter` executable available.
 
 ```bash
 # Clone the repository
-git clone https://github.com/JustinLawrenceMS/linter.git ~/php-linter
+git clone https://github.com/JustinLawrenceMS/php-linter.git ~/php-linter
 
 # Make the bundled CLI executable and put it on your PATH, or create an alias
 chmod +x ~/php-linter/plinter
@@ -23,7 +23,7 @@ chmod +x ~/php-linter/plinter
 mkdir -p ~/.local/bin && ln -sf ~/php-linter/plinter ~/.local/bin/plinter
 
 # Option 2: add an alias to your shell config
-echo "alias plinter='php ~/php-linter/plinter'" >> ~/.zshrc
+echo "alias plinter='~/php-linter/plinter'" >> ~/.zshrc
 source ~/.zshrc
 ```
 
