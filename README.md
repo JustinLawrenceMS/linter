@@ -1,5 +1,4 @@
-git clone https://github.com/JustinLawrenceMS/linter.git ~/php-linter
-alias php-lint='php ~/php-linter/linter.php'
+
 # plinter
 
 plinter is a small CLI wrapper around `php -l` that recursively scans PHP files in one or more directories and reports syntax errors. The scanning logic is implemented in a callable `Plinter\\Runner` class so you can use the scanner programmatically in tests or other PHP code.
@@ -12,20 +11,23 @@ plinter is a small CLI wrapper around `php -l` that recursively scans PHP files 
 
 ## Installation
 
-Clone the repository and set up an alias for convenient CLI usage:
+Clone the repository and make the bundled `plinter` executable available.
 
 ```bash
 # Clone the repository
 git clone https://github.com/JustinLawrenceMS/linter.git ~/php-linter
 
-# Add this alias to your ~/.bashrc, ~/.zshrc, or shell config:
-alias plinter='php ~/php-linter/linter.php'
+# Make the bundled CLI executable and put it on your PATH, or create an alias
+chmod +x ~/php-linter/plinter
+# Option 1: add to PATH (recommended)
+mkdir -p ~/.local/bin && ln -sf ~/php-linter/plinter ~/.local/bin/plinter
 
-# Reload your shell
-source ~/.zshrc  # or source ~/.bashrc for bash
+# Option 2: add an alias to your shell config
+echo "alias plinter='php ~/php-linter/plinter'" >> ~/.zshrc
+source ~/.zshrc
 ```
 
-Now you can run `plinter` from any directory:
+Usage examples:
 
 ```bash
 # Scan current directory
@@ -34,14 +36,18 @@ plinter
 # Scan a specific directory
 plinter /path/to/project
 
-# Scan multiple explicit paths
+# Scan multiple explicit paths (space-separated or comma-separated)
 plinter /path/a /path/b
+plinter "/path/a,/path/b"
 
 # Skip vendor directories
 plinter --skip-vendor /path/to/project
+
+# Verbose output
+plinter --verbose --skip-vendor .
 ```
 
-Note: `linter.php` is a small CLI wrapper. The core scanning code lives in `src/Runner.php` and is PSR-4 autoloadable under the `Plinter\\` namespace.
+Note: The canonical CLI entrypoint is the `plinter` executable in the project root. Legacy `linter.php` wrappers were removed to avoid duplicate/conflicting files. The core scanning code lives in `src/Runner.php` and is PSR-4 autoloadable under the `Plinter\\` namespace.
 
 ## Programmatic usage
 
